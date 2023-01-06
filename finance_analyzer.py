@@ -19,9 +19,7 @@ from keras import layers
 from keras.models import load_model
 from copy import deepcopy
 
-"test coomit git"
-def lalala():
-    return 1
+
 pdf_path1 = "C:\Desktop\study\python_project\crawler\sample_pdf.pdf"
 pdf_path2 = "C:\Desktop\study\python_project\crawler\sample_pdf2.pdf"
 sp_wiki_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
