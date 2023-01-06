@@ -67,15 +67,30 @@ sp_wiki_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 #         all_predictions.append(predictions)
 #     return pd.concat(all_predictions)  # take a list of dfs, and combine to single df
 class Util:
-    def __init__(self, stock_ticker_symbol="^GSPC", flag=False):
-        self.stock_ticker = yf.Ticker(stock_ticker_symbol).history(period="max")
-        if not flag:
+    def __init__(self, stock_ticker_symbol="^GSPC", flag=True):
+        self.stock_ticker = yf.Ticker(stock_ticker_symbol)
+        # self._stock_ticker = yf.Ticker(stock_ticker_symbol).history(period="max")
+        if flag:
             d, x, y = self.load_data()
-            self._stock_dataframe = np.concatenate(d, x, y)
-            self._dates = d
+            # self._stock_dataframe = pd.concat([pd.Series(d), pd.Series(x), pd.Series(y)])
+            self.dates = d
             self._data_table = x
             self._labels = y
 
+        # print(self._stock_dataframe)
+    def get_ticker_obj(self):
+        return self.stock_ticker
+
+    # def get_stock_df(self):
+    #     return self._stock_dataframe
+    def get_dates(self):
+        return self.dates
+
+    def get_data_table(self):
+        return self._data_table
+
+    def get_labels(self):
+        return self._labels
 
     def load_data(self):
         stock_dataframe = self.stock_ticker.history(period="max")
@@ -229,13 +244,14 @@ class LSTM:
     def __init__(self, X_train):
         self.feature_dim = X_train.shape[1]
         self.input_dim = X_train.shape[0]
-        self.model = Sequential()
-        self.model.add(layers.LSTM(64, activation='tanh', return_sequences=True, input_shape=(self.feature_dim, 1)))
-        self.model.add(layers.LSTM(32, activation='tanh'))
-        self.model.add(layers.Dense(1, activation='sigmoid'))
-        self.model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=['accuracy'])
+        self.lstm = Sequential()
+        self.lstm.add(layers.LSTM(64, activation='tanh', return_sequences=True, input_shape=(self.feature_dim, 1)))
+        self.lstm.add(layers.LSTM(32, activation='tanh'))
+        self.lstm.add(layers.Dense(1, activation='sigmoid'))
+        self.lstm.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=['accuracy'])
+        self.model = None
 
-    def train_model(self, X_val, y_val, epochs=100):
+    def train_model(self, X_train, y_train, X_val, y_val, epochs=50):
         """
          training the lstm model
          :param dates_train: the dates of the train dataset
@@ -246,9 +262,10 @@ class LSTM:
          :param y_val: validation set real labels
          :return:
          """
-        self.model.fit(x= self.X_train, y=self.y_train, validation_data=(X_val, y_val), epochs=100)
-        result = self.save_lstm_model(self.model)
-        return result
+        self.lstm.fit(x= X_train, y=y_train, validation_data=(X_val, y_val), epochs=epochs)
+        self.model = self.lstm.get_weights()
+        result = self.save_lstm_model()
+        # return result
 
     # def model_data(self):
     #     stock_dataframe = self.stock_ticker.history(period="max")
@@ -300,7 +317,7 @@ class LSTM:
         :return: the val prediction and its accuracy
         """
 
-        val_predictions = self.model.predict(X_val).flatten().round()
+        val_predictions = self.lstm.predict(X_val).flatten().round()
         val_acc = accuracy_score(y_val, val_predictions)
         return val_acc, val_predictions
 
@@ -312,8 +329,7 @@ class LSTM:
         :param X_set: train dataset
         :return: prediction list, 1 == increase price, 0 == else
         """
-        lstm_model = self.model
-        prediction = lstm_model.predict(X_test).flatten().round()
+        prediction = self.lstm.predict(X_test).flatten().round()
         return prediction
 
 
@@ -325,14 +341,15 @@ class LSTM:
         """
         #TODO
         # should recive as input the name of the model and then i can save diffrent model with diffrent names
-        if os.path.isfile("C:\Desktop\study\python_project\crawler\lstm_model_MSFT.h5") is False:
-            self.model.save("C:\Desktop\study\python_project\crawler\lstm_model_MSFT.h5")
+        if os.path.isfile("C:\Desktop\study\python_project\crawler\lstm_model_MSFT2.h5") is False:
+            self.lstm.save("C:\Desktop\study\python_project\crawler\lstm_model_MSFT2.h5")
             return 1
         return 0
 
     def load_lstm_model(self):
-        model = load_model("C:\Desktop\study\python_project\crawler\lstm_model_MSFT.h5")
-        return model
+        model = load_model("C:\Desktop\study\python_project\crawler\lstm_model_MSFT2.h5")
+        self.lstm = model
+        # return model
 
     def type_of_conclusion(self, y_real, y_predict):
         """
@@ -415,7 +432,7 @@ class LSTM:
         wind = util._df_to_windowed_df(stock_dataframe, prev_trade_day, today_trade_day)
 
         d, x, y = util.windowed_df_to_date_x_y(wind)
-        model = self.load_lstm_model()
+        self.load_lstm_model()
         classify = self.predict(x)
         print(classify)
 
@@ -423,21 +440,24 @@ class LSTM:
 if __name__ == '__main__':
 
     util =Util()
-    df = util._stock_dataframe
-    d,x,y = util.
-    d, x, y = model_data("MSFT")
-    dates_train, X_train, y_train, dates_val, X_val, y_val, dates_test, X_test, y_test = split_lstm_data(d, x, y)
-    train_model(dates_train, X_train, y_train, dates_val, X_val, y_val)
-    lstm_model = load_lstm_model()
+    # df = util.get_stock_df()
+    d, x, y = util.get_dates(), util.get_data_table(), util.get_labels()
+    lstm_model = LSTM(x)
+    dates_train, X_train, y_train, dates_val, X_val, y_val, dates_test, X_test, y_test = util.split_lstm_data(d, x, y)
+    #
+    # d, x, y = model_data("MSFT")
+    # dates_train, X_train, y_train, dates_val, X_val, y_val, dates_test, X_test, y_test = split_lstm_data(d, x, y)
+    # lstm_model.train_model(X_train, y_train, X_val, y_val)
+    lstm_model.load_lstm_model()
     # lstm_model.summary()
-    prediction = predict(lstm_model, X_test)
-    score_dict = score_helper(y_test, prediction)
-    # # # print(score_dict)
-    plot_roc_curve(y_test, prediction)
+    prediction = lstm_model.predict(X_test)
+    score_dict = lstm_model.score_helper(y_test, prediction)
+    print(score_dict)
+    lstm_model.plot_roc_curve(y_test, prediction)
     # #
-    plot_confusion_matrix(y_test, prediction)
+    lstm_model.plot_confusion_matrix(y_test, prediction)
     # lstm_model()
-    classify_today("MSFT")
+    lstm_model.classify_today("MSFT")
 
 #TODO
 # after creating the model we need
