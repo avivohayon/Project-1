@@ -66,16 +66,20 @@ sp_wiki_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 #         predictions = predict(train, test, predictors, model)
 #         all_predictions.append(predictions)
 #     return pd.concat(all_predictions)  # take a list of dfs, and combine to single df
+class Util:
+    def __init__(self, stock_ticker_symbol="^GSPC", flag=False):
+        self.stock_ticker = yf.Ticker(stock_ticker_symbol).history(period="max")
+        if not flag:
+            d, x, y = self.load_data()
+            self._stock_dataframe = np.concatenate(d, x, y)
+            self._dates = d
+            self._data_table = x
+            self._labels = y
 
-class LSTM:
 
-    def __init__(self, stock_ticker_symbol="^GSPC" ):
-        self.stock_ticker = yf.Ticker(stock_ticker_symbol)  # GSPC symbol is the S&P500 index
-        self.stock_dataframe = self.stock_ticker.history(period="max")
-        self.stock_dataframe = self.stock_dataframe.loc["2000-01-01":].copy()  # get only the stocks from year 2000 and above
-
-    def model_data(self, stock_dataframe):
-
+    def load_data(self):
+        stock_dataframe = self.stock_ticker.history(period="max")
+        self._stock_dataframe = stock_dataframe.loc["2000-01-01":].copy()  # get only the stocks from year 2000 and above
         del stock_dataframe["Open"]
         del stock_dataframe["Volume"]
         del stock_dataframe["Dividends"]
@@ -84,17 +88,14 @@ class LSTM:
         wind = self._df_to_windowed_df(stock_dataframe, "2010-01-07", prev_trade_day)
         # # important. if ill put 2000-01-01 then it wont be able to generate the previoud days data so need to give him
         # so later day to start
-        d, x, y = self._windowed_df_to_date_x_y(wind)
+        d, x, y = self.windowed_df_to_date_x_y(wind)
         return d, x, y
-
 
     def _str_to_datetime(self, string):
         # string = string[:-15]
         split = string.split('-')
         year, month, day = int(split[0]), int(split[1]), int(split[2])
         return datetime.datetime(year=year, month=month, day=day)
-
-
 
     def _df_to_windowed_df(self, dataframe, first_date_str, last_date_str, n=3):
         """
@@ -126,9 +127,8 @@ class LSTM:
             # positive ints represnet higher closing price then the avarege and negetive lower closing price
             # remark we taking the [3:4][0] entry cuz we need the data only for the "z" date and nots its tail for that
             high_val, low_val = df_subset['High'][3:4][0], df_subset["Low"][3:4][0]
-            w = ((values[3:4][0]) - (( high_val + low_val) / 2) ).astype(int)
+            w = ((values[3:4][0]) - ((high_val + low_val) / 2)).astype(int)
             x, y = values[:-1], values[-1]
-
 
             dates.append(target_date)
             X.append(x)
@@ -159,14 +159,14 @@ class LSTM:
             ret_df[f'Target-{n - i}'] = X[:, i]
             ret_df[f'Close Price Dist from High Low Average'] = W[:]
 
-
         ret_df['Target'] = Y
-        ret_df = ret_df.loc[:,["Target Date", "Target-3", "Target-2", "Target-1", "Target", "Close Price Dist from High Low Average"]]
+        ret_df = ret_df.loc[:, ["Target Date", "Target-3", "Target-2", "Target-1", "Target",
+                                "Close Price Dist from High Low Average"]]
 
         # RSI is an oscillation indicator to measure stock's momentum which is bith the speed and size if price changes
         # good to detrmine if the stock is overbought or  oversold
         # good to under if to buy or sell a stock
-        ret_df["RSI"] = ta.rsi(ret_df["Target"]) # need to drop na
+        ret_df["RSI"] = ta.rsi(ret_df["Target"])  # need to drop na
         # 3 indicator for EMA which is exponantial moving average which give more wight for recent price move
         # we add fast, medium and slow moving average columns
         ret_df["Fast EMA"] = ta.ema(ret_df["Target"], length=20)
@@ -179,9 +179,7 @@ class LSTM:
 
         return ret_df
 
-
-
-    def _windowed_df_to_date_x_y(self, windowed_dataframe):
+    def windowed_df_to_date_x_y(self, windowed_dataframe):
         """
         step 2 of converting the data into supervised learning problem where
         :param: the windowed_dataframe from "df_to_windowed_df" func
@@ -191,7 +189,7 @@ class LSTM:
         """
         df_as_np = windowed_dataframe.to_numpy()
         dates = df_as_np[:, 0]  # getting all the dates from the column
-        mid_matrix = df_as_np[:, 1: -1].astype(np.float32) # getting the target -i columns
+        mid_matrix = df_as_np[:, 1: -1].astype(np.float32)  # getting the target -i columns
 
         # # normalize and scaling the data fro training
         # mean = mid_matrix.mean(axis=0)
@@ -203,7 +201,8 @@ class LSTM:
         # print("noralize and scalred matrix is: ")
         # print(mid_matrix)
 
-        X_matrix = mid_matrix.reshape((len(dates), mid_matrix.shape[1], 1))  # reshape the matrix to make the 1d input for the LSTM
+        X_matrix = mid_matrix.reshape(
+            (len(dates), mid_matrix.shape[1], 1))  # reshape the matrix to make the 1d input for the LSTM
         y_output = df_as_np[:, -1]
         return dates, X_matrix.astype(np.float32), y_output.astype(np.float32)
 
@@ -219,34 +218,79 @@ class LSTM:
         train_cutoff = int(len(dates) * .8)
         test_cutoff = int(len(dates) * .9)
         dates_train, X_train, y_train = dates[:train_cutoff], X_matrix[:train_cutoff], y_output[:train_cutoff]
-        dates_val, X_val, y_val = dates[train_cutoff:test_cutoff], X_matrix[train_cutoff:test_cutoff], y_output[train_cutoff:test_cutoff]
+        dates_val, X_val, y_val = dates[train_cutoff:test_cutoff], X_matrix[train_cutoff:test_cutoff], y_output[
+                                                                                                       train_cutoff:test_cutoff]
         dates_test, X_test, y_test = dates[test_cutoff:], X_matrix[test_cutoff:], y_output[test_cutoff:]
         return dates_train, X_train, y_train, dates_val, X_val, y_val, dates_test, X_test, y_test
 
-    def train_model(self, dates_train, X_train, y_train, dates_val, X_val, y_val):
+
+class LSTM:
+
+    def __init__(self, X_train):
+        self.feature_dim = X_train.shape[1]
+        self.input_dim = X_train.shape[0]
+        self.model = Sequential()
+        self.model.add(layers.LSTM(64, activation='tanh', return_sequences=True, input_shape=(self.feature_dim, 1)))
+        self.model.add(layers.LSTM(32, activation='tanh'))
+        self.model.add(layers.Dense(1, activation='sigmoid'))
+        self.model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=['accuracy'])
+
+    def train_model(self, X_val, y_val, epochs=100):
         """
-        training the lstm model
-        :param dates_train: the dates of the train dataset
-        :param X_train: train dataset
-        :param y_train: train dataset real labels
-        :param dates_val: The dates of the validation dataset
-        :param X_val: validation set
-        :param y_val: validation set real labels
-        :return:
-        """
-        print("a-------------------------------a \n", X_train)
-        features = X_train.shape[1]
-        input_dim = X_train.shape[0]
-        model = Sequential()
-        model.add(layers.LSTM(64, activation='tanh', return_sequences=True, input_shape=(features, 1)))
-        model.add(layers.LSTM(32, activation='tanh'))
-        model.add(layers.Dense(1, activation='sigmoid'))
-        model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=['accuracy'])
-        model.fit(x= X_train, y=y_train, validation_data=(X_val, y_val), epochs=100)
-        result = self.save_lstm_model(model)
+         training the lstm model
+         :param dates_train: the dates of the train dataset
+         :param X_train: train dataset
+         :param y_train: train dataset real labels
+         :param dates_val: The dates of the validation dataset
+         :param X_val: validation set
+         :param y_val: validation set real labels
+         :return:
+         """
+        self.model.fit(x= self.X_train, y=self.y_train, validation_data=(X_val, y_val), epochs=100)
+        result = self.save_lstm_model(self.model)
+        return result
+
+    # def model_data(self):
+    #     stock_dataframe = self.stock_ticker.history(period="max")
+    #     self.stock_dataframe = self.stock_dataframe.loc[
+    #                            "2000-01-01":].copy()  # get only the stocks from year 2000 and above
+    #     del stock_dataframe["Open"]
+    #     del stock_dataframe["Volume"]
+    #     del stock_dataframe["Dividends"]
+    #     del stock_dataframe["Stock Splits"]
+    #     prev_trade_day = str(stock_dataframe.reset_index()["Date"].iloc[-1])[:10]
+    #     wind = self._df_to_windowed_df(stock_dataframe, "2010-01-07", prev_trade_day)
+    #     # # important. if ill put 2000-01-01 then it wont be able to generate the previoud days data so need to give him
+    #     # so later day to start
+    #     d, x, y = self._windowed_df_to_date_x_y(wind)
+    #     return d, x, y
 
 
-    def validate(self, model, dates_val, X_val, y_val):
+    #
+    # def train_model(self, dates_train, X_train, y_train, dates_val, X_val, y_val):
+    #     """
+    #     training the lstm model
+    #     :param dates_train: the dates of the train dataset
+    #     :param X_train: train dataset
+    #     :param y_train: train dataset real labels
+    #     :param dates_val: The dates of the validation dataset
+    #     :param X_val: validation set
+    #     :param y_val: validation set real labels
+    #     :return:
+    #     """
+    #     print("a-------------------------------a \n", X_train)
+    #     features = X_train.shape[1]
+    #     input_dim = X_train.shape[0]
+    #     model = Sequential()
+    #     model.add(layers.LSTM(64, activation='tanh', return_sequences=True, input_shape=(features, 1)))
+    #     model.add(layers.LSTM(32, activation='tanh'))
+    #     model.add(layers.Dense(1, activation='sigmoid'))
+    #     model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=['accuracy'])
+    #     model.fit(x= X_train, y=y_train, validation_data=(X_val, y_val), epochs=100)
+    #     result = self.save_lstm_model(model)
+
+
+    def validate(self ,X_val, y_val):
         """
 
         :param model:
@@ -256,11 +300,11 @@ class LSTM:
         :return: the val prediction and its accuracy
         """
 
-        val_predictions = model.predict(X_val).flatten().round()
+        val_predictions = self.model.predict(X_val).flatten().round()
         val_acc = accuracy_score(y_val, val_predictions)
         return val_acc, val_predictions
 
-    def predict(self, model, X_test):
+    def predict(self, X_test):
         """
         predict if a stock price of a model based company trained for will increase its price
         :param model: the train model (for a specific company)
@@ -268,12 +312,12 @@ class LSTM:
         :param X_set: train dataset
         :return: prediction list, 1 == increase price, 0 == else
         """
-        lstm_model = model
+        lstm_model = self.model
         prediction = lstm_model.predict(X_test).flatten().round()
         return prediction
 
 
-    def save_lstm_model(self, model):
+    def save_lstm_model(self):
         """
         saving the trained model
         :param model: the trained model
@@ -282,7 +326,7 @@ class LSTM:
         #TODO
         # should recive as input the name of the model and then i can save diffrent model with diffrent names
         if os.path.isfile("C:\Desktop\study\python_project\crawler\lstm_model_MSFT.h5") is False:
-            model.save("C:\Desktop\study\python_project\crawler\lstm_model_MSFT.h5")
+            self.model.save("C:\Desktop\study\python_project\crawler\lstm_model_MSFT.h5")
             return 1
         return 0
 
@@ -354,6 +398,8 @@ class LSTM:
         plt.show()
 
     def classify_today(self, stock_ticker_symbol="^GSPC"):
+        util = Util(stock_ticker_symbol)
+
         now = datetime.datetime.today()
         three_days_ago = now - datetime.timedelta(days=3)
 
@@ -366,16 +412,19 @@ class LSTM:
         del stock_dataframe["Dividends"]
         del stock_dataframe["Stock Splits"]
 
-        wind = self._df_to_windowed_df(stock_dataframe, prev_trade_day, today_trade_day)
+        wind = util._df_to_windowed_df(stock_dataframe, prev_trade_day, today_trade_day)
 
-        d, x, y = self._windowed_df_to_date_x_y(wind)
+        d, x, y = util.windowed_df_to_date_x_y(wind)
         model = self.load_lstm_model()
-        classify = self.predict(model, x)
+        classify = self.predict(x)
         print(classify)
 
         return classify
 if __name__ == '__main__':
 
+    util =Util()
+    df = util._stock_dataframe
+    d,x,y = util.
     d, x, y = model_data("MSFT")
     dates_train, X_train, y_train, dates_val, X_val, y_val, dates_test, X_test, y_test = split_lstm_data(d, x, y)
     train_model(dates_train, X_train, y_train, dates_val, X_val, y_val)
