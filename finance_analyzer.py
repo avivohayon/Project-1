@@ -24,76 +24,46 @@ pdf_path1 = "C:\Desktop\study\python_project\crawler\sample_pdf.pdf"
 pdf_path2 = "C:\Desktop\study\python_project\crawler\sample_pdf2.pdf"
 sp_wiki_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 #
-# def load_data(stock_ticker_symbol="^GSPC"):
-#     """
-#     load, organize and clean the S&P500 data for our model to use
-#     :return: sp500 data frame from the ticker object with the needed information
-#     """
-#     stock_ticker = yf.Ticker(stock_ticker_symbol) #GSPC symbol is the S&P500 index
-#     stock_dataframe = stock_ticker.history(period="max")
-#     stock_dataframe = stock_dataframe.loc["2000-01-01":].copy() # get only the stocks from year 2000 and above
-#     # print(sp500)
-#     # sp500 = sp500.index #the date coulm will help us slice the data easily
-#     stock_dataframe.plot.line(y="Close", use_index=True) # x - dates, y - close price
-#     # plt.show()
-#     del stock_dataframe["Dividends"]
-#     del stock_dataframe["Stock Splits"]
-#
-#     # we will predict if the stock will increase its price rather then the price itself cuz thats what important for us
-#     stock_dataframe["Tomorrow"] = stock_dataframe["Close"].shift(-1)  # creating new column by shifting all the Close column one day
-#     # i.g if the date is 1/1/1990 then  its "tomorrow" price its 2/1/1990 "Close" (today) price
-#
-#     # base ot "Tomorrow" price we can try to predict, meaning set a target for our ML
-#     stock_dataframe["Target"] = (stock_dataframe["Close"] < stock_dataframe["Tomorrow"]).astype(int)
-#     # print(sp500)
-#     return stock_dataframe
-#
-#
-# def back_test(data, model, predictors, start=2500, step=250):
-#     """
-#
-#     :param data: the dataframe of the company
-#     :param model: ML model
-#     :param predictors:the model predictors
-#     :param start: 2500 by default, every trading year is about 250 days so train the model with "10 years" of data
-#     :param step: 250 by default train for "each trading year"
-#     :return:
-#     """
-#     all_predictions = []  # list of df, each entry is a prediction for a single year
-#     for i in range(start, data.shape[0], step):
-#         # train set is all the yeas before current year, test is the current year
-#         train, test = data.iloc[0:i].copy(), data.iloc[i:(i+step)].copy()
-#         predictions = predict(train, test, predictors, model)
-#         all_predictions.append(predictions)
-#     return pd.concat(all_predictions)  # take a list of dfs, and combine to single df
+
 class Util:
     def __init__(self, stock_ticker_symbol="^GSPC", flag=True):
-        self.stock_ticker = yf.Ticker(stock_ticker_symbol)
-        # self._stock_ticker = yf.Ticker(stock_ticker_symbol).history(period="max")
+        self._stock_ticker = yf.Ticker(stock_ticker_symbol)
         if flag:
             d, x, y = self.load_data()
-            # self._stock_dataframe = pd.concat([pd.Series(d), pd.Series(x), pd.Series(y)])
-            self.dates = d
+            self._dates = d
             self._data_table = x
             self._labels = y
 
-        # print(self._stock_dataframe)
     def get_ticker_obj(self):
-        return self.stock_ticker
+        """
+        :return: return the stock ticker obj
+        """
+        return self._stock_ticker
 
-    # def get_stock_df(self):
-    #     return self._stock_dataframe
     def get_dates(self):
-        return self.dates
+        """
+        :return:  all the dates of the data set
+        """
+        return self._dates
 
     def get_data_table(self):
+        """
+         :return:  all the generated feature matrix data  for learning
+         """
         return self._data_table
 
     def get_labels(self):
+        """
+        :return: return the true labels of the data
+        """
         return self._labels
 
     def load_data(self):
-        stock_dataframe = self.stock_ticker.history(period="max")
+        """
+        generate the needed data frame for learning by adding and organizing the needed feature
+        :return:
+        """
+        stock_dataframe = self._stock_ticker.history(period="max")
         self._stock_dataframe = stock_dataframe.loc["2000-01-01":].copy()  # get only the stocks from year 2000 and above
         del stock_dataframe["Open"]
         del stock_dataframe["Volume"]
@@ -107,6 +77,11 @@ class Util:
         return d, x, y
 
     def _str_to_datetime(self, string):
+        """
+        making a string of a date into a datetime object
+        :param string: date string
+        :return: datetime obj with the same date of the string
+        """
         # string = string[:-15]
         split = string.split('-')
         year, month, day = int(split[0]), int(split[1]), int(split[2])
@@ -265,58 +240,15 @@ class LSTM:
         self.lstm.fit(x= X_train, y=y_train, validation_data=(X_val, y_val), epochs=epochs)
         self.model = self.lstm.get_weights()
         result = self.save_lstm_model()
-        # return result
 
-    # def model_data(self):
-    #     stock_dataframe = self.stock_ticker.history(period="max")
-    #     self.stock_dataframe = self.stock_dataframe.loc[
-    #                            "2000-01-01":].copy()  # get only the stocks from year 2000 and above
-    #     del stock_dataframe["Open"]
-    #     del stock_dataframe["Volume"]
-    #     del stock_dataframe["Dividends"]
-    #     del stock_dataframe["Stock Splits"]
-    #     prev_trade_day = str(stock_dataframe.reset_index()["Date"].iloc[-1])[:10]
-    #     wind = self._df_to_windowed_df(stock_dataframe, "2010-01-07", prev_trade_day)
-    #     # # important. if ill put 2000-01-01 then it wont be able to generate the previoud days data so need to give him
-    #     # so later day to start
-    #     d, x, y = self._windowed_df_to_date_x_y(wind)
-    #     return d, x, y
-
-
-    #
-    # def train_model(self, dates_train, X_train, y_train, dates_val, X_val, y_val):
-    #     """
-    #     training the lstm model
-    #     :param dates_train: the dates of the train dataset
-    #     :param X_train: train dataset
-    #     :param y_train: train dataset real labels
-    #     :param dates_val: The dates of the validation dataset
-    #     :param X_val: validation set
-    #     :param y_val: validation set real labels
-    #     :return:
-    #     """
-    #     print("a-------------------------------a \n", X_train)
-    #     features = X_train.shape[1]
-    #     input_dim = X_train.shape[0]
-    #     model = Sequential()
-    #     model.add(layers.LSTM(64, activation='tanh', return_sequences=True, input_shape=(features, 1)))
-    #     model.add(layers.LSTM(32, activation='tanh'))
-    #     model.add(layers.Dense(1, activation='sigmoid'))
-    #     model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=['accuracy'])
-    #     model.fit(x= X_train, y=y_train, validation_data=(X_val, y_val), epochs=100)
-    #     result = self.save_lstm_model(model)
 
 
     def validate(self ,X_val, y_val):
         """
-
-        :param model:
-        :param dates_val:
-        :param X_val:
-        :param y_val:
+        :param X_val: validation set data
+        :param y_val: validation set labels
         :return: the val prediction and its accuracy
         """
-
         val_predictions = self.lstm.predict(X_val).flatten().round()
         val_acc = accuracy_score(y_val, val_predictions)
         return val_acc, val_predictions
@@ -415,7 +347,7 @@ class LSTM:
         plt.show()
 
     def classify_today(self, stock_ticker_symbol="^GSPC"):
-        util = Util(stock_ticker_symbol)
+        util = Util(stock_ticker_symbol, False)
 
         now = datetime.datetime.today()
         three_days_ago = now - datetime.timedelta(days=3)
@@ -440,14 +372,10 @@ class LSTM:
 if __name__ == '__main__':
 
     util =Util()
-    # df = util.get_stock_df()
     d, x, y = util.get_dates(), util.get_data_table(), util.get_labels()
     lstm_model = LSTM(x)
     dates_train, X_train, y_train, dates_val, X_val, y_val, dates_test, X_test, y_test = util.split_lstm_data(d, x, y)
-    #
-    # d, x, y = model_data("MSFT")
-    # dates_train, X_train, y_train, dates_val, X_val, y_val, dates_test, X_test, y_test = split_lstm_data(d, x, y)
-    # lstm_model.train_model(X_train, y_train, X_val, y_val)
+    lstm_model.train_model(X_train, y_train, X_val, y_val)
     lstm_model.load_lstm_model()
     # lstm_model.summary()
     prediction = lstm_model.predict(X_test)
@@ -456,7 +384,6 @@ if __name__ == '__main__':
     lstm_model.plot_roc_curve(y_test, prediction)
     # #
     lstm_model.plot_confusion_matrix(y_test, prediction)
-    # lstm_model()
     lstm_model.classify_today("MSFT")
 
 #TODO
