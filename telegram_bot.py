@@ -1,13 +1,17 @@
 from flask import Flask, request, jsonify
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-import message_manager
 import telebot
 from telebot import types
 from constant import TOKEN_API
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import pdf_downlad
+import project_db
+
 import os
 bot = telebot.TeleBot(TOKEN_API, parse_mode=None)
+states_dict ={"Menu": 0, "Start": 1, "All": 2, "Some": 3, "ML": 4, "Close": 5}
+bot_db = project_db.ProjectDB()
+
 #TODO
 # use db, create a global session and update it
 # check ORM (mySQL) wirte one time scheme for the DB (save user state and the last messge)
@@ -17,7 +21,8 @@ bot = telebot.TeleBot(TOKEN_API, parse_mode=None)
 
 # use "@" for any function that our bot will use as msg handling
 @bot.message_handler(commands=["hello", "start"])
-def send_hello_msg(msg):
+def main(msg):
+    register_user(msg.chat.id, "Start")
     bot.reply_to(msg, "Hello! Im Mr Buttons your furry finance bot!\n")
     markup = types.ReplyKeyboardMarkup(row_width=2, one_time_keyboard=True, resize_keyboard=True)
     btn1 = types.KeyboardButton("/all")
@@ -27,8 +32,16 @@ def send_hello_msg(msg):
     bot.send_message(chat_id=msg.chat.id,text=" What will you like me to do?", reply_markup=markup)
 
 
+def register_user(chat_id, command):
+    if bot_db.insert_user(chat_id, command):
+        return True
+    return False
+
+
+
 @bot.message_handler(commands=["all"])
 def send_all_pdfs(msg):
+    bot_db.update_state(msg.chat.id, "All")
     bot.reply_to(msg, "Getting all the file, Meow. it might take a second. here a song while you wait Meoww")
     bot.send_message(chat_id=msg.chat.id, text="https://www.youtube.com/watch?v=jIQ6UV2onyI")
     pdf_downlad.runner()
@@ -44,15 +57,17 @@ def send_all_pdfs(msg):
 
 @bot.message_handler()
 def router(msg):
-    chat_id = msg.chat.id
+    cur_user_state = bot_db.get_state(msg.chat.id)
     # TODO user_menu_state (from db by chat_id)
-    user_menu_state = 1
+    user_menu_state = states_dict[cur_user_state]
     match user_menu_state:
-        case 1:
+        case 0:
             # TODO call some(msg)
             pass
-        case 2:
+        case 1:
             # TODO call all()
+            pass
+        case 2:
             pass
 
 #TODO write a decorator that saves user current menu state by chat_id
@@ -80,6 +95,7 @@ def get_companies_names(msg):
 
 @bot.message_handler(commands=["close"])
 def close_menu(msg):
+    bot_db.update_state(msg.chat.id, "Close")
     markup = types.ReplyKeyboardRemove(selective=False)
     bot.send_message(chat_id=msg.chat.id, text="Meow Meow", reply_markup=markup )
 
