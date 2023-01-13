@@ -384,7 +384,7 @@ if __name__ == '__main__':
     lstm_model.plot_roc_curve(y_test, prediction)
     # #
     lstm_model.plot_confusion_matrix(y_test, prediction)
-    lstm_model.classify_today("MSFT")
+    # lstm_model.classify_today("MSFT")
 
 #TODO
 # after creating the model we need

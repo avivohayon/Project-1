@@ -23,4 +23,9 @@ This repository contains 4 main files:
 REMARK - This project is sill in development and will have more features
 and debugging in the future 
 
+# Some pics 
+![bot](MrButtonss_bot.jpeg)
 
+![features](features_matrix.JPG)
+
+![conf](confusion_matrix.png)
