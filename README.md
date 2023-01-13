@@ -24,7 +24,7 @@ REMARK - This project is sill in development and will have more features
 and debugging in the future 
 
 # Some pics 
-![bot](MrButtonss_bot.jpeg)
+![bot](pics/MrButtonss_bot.jpeg)
 
 ![features](features_matrix.JPG)
 
