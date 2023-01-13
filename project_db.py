@@ -35,7 +35,7 @@ class ProjectDB:
 
 
 
-"test"
+
 db = ProjectDB()
 my_cursor = db.get_cursor()
 # db.insert_user( 123, "hello")
