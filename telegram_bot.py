@@ -22,7 +22,7 @@ bot_db = project_db.ProjectDB()
 # use "@" for any function that our bot will use as msg handling
 @bot.message_handler(commands=["hello", "start"])
 def main(msg):
-    register_user(msg.chat.id, "Start")
+    register_user([msg.chat.id], "Start")
     bot.reply_to(msg, "Hello! Im Mr Buttons your furry finance bot!\n")
     markup = types.ReplyKeyboardMarkup(row_width=2, one_time_keyboard=True, resize_keyboard=True)
     btn1 = types.KeyboardButton("/all")
@@ -32,16 +32,9 @@ def main(msg):
     bot.send_message(chat_id=msg.chat.id,text=" What will you like me to do?", reply_markup=markup)
 
 
-def register_user(chat_id, command):
-    if bot_db.insert_user(chat_id, command):
-        return True
-    return False
-
-
-
 @bot.message_handler(commands=["all"])
 def send_all_pdfs(msg):
-    bot_db.update_state(msg.chat.id, "All")
+    bot_db.update_state([msg.chat.id], "All")
     bot.reply_to(msg, "Getting all the file, Meow. it might take a second. here a song while you wait Meoww")
     bot.send_message(chat_id=msg.chat.id, text="https://www.youtube.com/watch?v=jIQ6UV2onyI")
     pdf_downlad.runner()
@@ -55,9 +48,27 @@ def send_all_pdfs(msg):
 #     # i need to see if i need to delete all the file if somone will ask to get all, and then get just some so
 #     # i wont give the user a file he doesnt need
 
+#TODO write a decorator that saves user current menu state by chat_id
+
+@bot.message_handler(commands=["some"])
+def send_some_pdfs(msg):
+    bot_db.update_state([msg.chat.id], "Some")
+    bot.reply_to(msg, "Please name the companies you want separate by comma i.e: \nfor one company write  (with comma): comapny_name, \n "
+                      "for more then one company write: company_name1,company_name2,... ")
+    # TODO save user_menu_state as some
+    print(msg.text)
+
+@bot.message_handler(commands=["close"])
+def close_menu(msg):
+    bot_db.update_state([msg.chat.id], "Close")
+    markup = types.ReplyKeyboardRemove(selective=False)
+    bot.send_message(chat_id=msg.chat.id, text="Meow Meow", reply_markup=markup )
+    bot_db.delete_user([msg.chat.id])
+
+
 @bot.message_handler()
 def router(msg):
-    cur_user_state = bot_db.get_state(msg.chat.id)
+    cur_user_state = bot_db.get_state([msg.chat.id])
     # TODO user_menu_state (from db by chat_id)
     user_menu_state = states_dict[cur_user_state]
     match user_menu_state:
@@ -69,18 +80,12 @@ def router(msg):
             pass
         case 2:
             pass
+        case 3:
+            get_companies_names(msg)
 
-#TODO write a decorator that saves user current menu state by chat_id
 
-@bot.message_handler(commands=["some"])
-def send_some_pdfs(msg):
-    # save_user_state(char_id, state)
-    bot.reply_to(msg, "Please name the companies you want separate by comma i.e: \nfor one company write  (with comma): comapny_name, \n "
-                      "for more then one company write: company_name1,company_name2,... ")
-    # TODO save user_menu_state as some
-    print(msg.text)
 
-@bot.message_handler(func=lambda msg:msg.text is not None and "," in msg.text)
+# @bot.message_handler(func=lambda msg:msg.text is not None and "," in msg.text)
 def get_companies_names(msg):
     bot.reply_to(msg, "Working on it!")
     companies_lst = msg.text.split(",")
@@ -93,12 +98,13 @@ def get_companies_names(msg):
         bot.send_document(msg.chat.id, cur_pdf)
         cur_pdf.close()
 
-@bot.message_handler(commands=["close"])
-def close_menu(msg):
-    bot_db.update_state(msg.chat.id, "Close")
-    markup = types.ReplyKeyboardRemove(selective=False)
-    bot.send_message(chat_id=msg.chat.id, text="Meow Meow", reply_markup=markup )
 
+
+
+def register_user(chat_id, command):
+    if bot_db.insert_user(chat_id, command):
+        return True
+    return False
 
 # let the bot listen to msgs
 bot.polling()

@@ -27,7 +27,7 @@ class ProjectDB:
         """
         if self.check_if_exist(chat_id):
             return False
-        self._my_cursor.execute("INSERT INTO User (chat_id, cur_stage) VALUES (%s, %s)", (chat_id, state))
+        self._my_cursor.execute("INSERT INTO User (chat_id, cur_stage) VALUES (%s, %s)", (chat_id[0], state))
         self._db.commit()
         return True
 
@@ -45,10 +45,6 @@ class ProjectDB:
             self._my_cursor.execute("SELECT cur_stage FROM User WHERE chat_id = %s", chat_id)
             return self._my_cursor.fetchall()[0][0]
         return False
-        # result = self._my_cursor.fetchall()
-        # if result != [] : return result[0][0]
-        # return False
-        # return self._my_cursor.fetchall()[0][0]  # for return a string and not a tuple
 
     def update_state(self, chat_id, state):
         """
@@ -58,7 +54,7 @@ class ProjectDB:
         :return: True if the user exists and has been added, False otherwise
         """
         if self.check_if_exist(chat_id):
-            self._my_cursor.execute("UPDATE User SET cur_stage = %s WHERE chat_id = %s", (state, chat_id))
+            self._my_cursor.execute("UPDATE User SET cur_stage = %s WHERE chat_id = %s", (state, chat_id[0]))
             self._db.commit()
             return True
         return False
@@ -73,15 +69,15 @@ class ProjectDB:
         return False
 
 
-
-db = ProjectDB()
-my_cursor = db.get_cursor()
-# db.insert_user( 123, "hello")
-# db.update_stage(123, "goodbye")
-print(db.insert_user(123, "asd"))
-# stage = db.get_stage(my_cursor, [123])
-# print(stage[0][0])
-# db.delete_user(my_cursor, [123])
+#
+# db = ProjectDB()
+# # my_cursor = db.get_cursor()
+# # db.delete_user( [123512])
+# db.update_state([123], "bye")
+# print(db.insert_user([44], "asd"))
+# # stage = db.get_stage(my_cursor, [123])
+# # print(stage[0][0])
+# # db.delete_user(my_cursor, [123])
 
 # my_cursor.execute("SELECT * FROM User")
 

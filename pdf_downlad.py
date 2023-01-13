@@ -77,6 +77,8 @@ def download_pdf(pdf_urls):
             with open(file_path, 'wb') as f:
                 f.write(response.content)
 
+    # TODO
+    # if theres already file in the output dir it will send them as well, need to fix it
 
 def runner(company_name = None):
     """
@@ -92,7 +94,7 @@ def runner(company_name = None):
             # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
             get_pdf_links(list(company_pdf_links[company]), pdf_urls)
             counter += 1
-        if company_name is not None and company in company_name and counter<6:
+        if company_name is not None and company in company_name and counter<8:
             get_pdf_links(list(company_pdf_links[company]), pdf_urls)
             counter += 1
     print(pdf_urls)
