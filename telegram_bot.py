@@ -7,8 +7,12 @@ from constant import TOKEN_API
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import pdf_downlad
 import os
-import pa
 bot = telebot.TeleBot(TOKEN_API, parse_mode=None)
+#TODO
+# use db, create a global session and update it
+# check ORM (mySQL) wirte one time scheme for the DB (save user state and the last messge)
+# open SQL server
+# read on "docker"( la misaviv)
 
 
 # use "@" for any function that our bot will use as msg handling
@@ -38,10 +42,27 @@ def send_all_pdfs(msg):
 #     # i need to see if i need to delete all the file if somone will ask to get all, and then get just some so
 #     # i wont give the user a file he doesnt need
 
+@bot.message_handler()
+def router(msg):
+    chat_id = msg.chat.id
+    # TODO user_menu_state (from db by chat_id)
+    user_menu_state = 1
+    match user_menu_state:
+        case 1:
+            # TODO call some(msg)
+            pass
+        case 2:
+            # TODO call all()
+            pass
+
+#TODO write a decorator that saves user current menu state by chat_id
+
 @bot.message_handler(commands=["some"])
 def send_some_pdfs(msg):
+    # save_user_state(char_id, state)
     bot.reply_to(msg, "Please name the companies you want separate by comma i.e: \nfor one company write  (with comma): comapny_name, \n "
                       "for more then one company write: company_name1,company_name2,... ")
+    # TODO save user_menu_state as some
     print(msg.text)
 
 @bot.message_handler(func=lambda msg:msg.text is not None and "," in msg.text)

@@ -17,7 +17,7 @@ headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
           }
 
 
-
+#TODO rn headless (so it wont open the borwser)
 def get_data_links():
     """
     get the links for the pdf file of the companies
@@ -88,7 +88,7 @@ def runner(company_name = None):
     company_pdf_links = get_data_links()
     counter = 0
     for company in company_pdf_links:
-        if company_name is None and counter<6:
+        if company_name is None and counter<10:
             # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
             get_pdf_links(list(company_pdf_links[company]), pdf_urls)
             counter += 1
