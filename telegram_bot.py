@@ -6,7 +6,7 @@ from constant import TOKEN_API
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import pdf_downlad
 import project_db
-
+import finance_analyzer
 import os
 bot = telebot.TeleBot(TOKEN_API, parse_mode=None)
 states_dict ={"Menu": 0, "Start": 1, "All": 2, "Some": 3, "ML": 4, "Close": 5}
@@ -22,6 +22,7 @@ bot_db = project_db.ProjectDB()
 # use "@" for any function that our bot will use as msg handling
 @bot.message_handler(commands=["hello", "start"])
 def main(msg):
+    bot_db.delete_user([msg.chat.id])
     register_user([msg.chat.id], "Start")
     bot.reply_to(msg, "Hello! Im Mr Buttons your furry finance bot!\n")
     markup = types.ReplyKeyboardMarkup(row_width=2, one_time_keyboard=True, resize_keyboard=True)
