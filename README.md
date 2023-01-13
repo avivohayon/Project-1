@@ -24,8 +24,8 @@ REMARK - This project is sill in development and will have more features
 and debugging in the future 
 
 # Some pics 
-![bot](pics/MrButtonss_bot.jpeg)
+![bot](pics\MrButtons_bot.jpeg)
 
-![features](features_matrix.JPG)
+![features](pics\features_matrix.JPG)
 
-![conf](confusion_matrix.png)
+![conf](pics\confusion_matrix.png)
