@@ -3,8 +3,6 @@ import requests
 import httplib2
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-# from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.firefox.options import Options
 from bs4 import BeautifulSoup
 import tabula
@@ -25,7 +23,6 @@ class Crawler:
            "Referer": "http://google.com",
            "DNT":"1"
           }
-        self._service = Service("C:\Desktop\study\python_project\crawler\chromedriver.exe")
         self.options = Options()
         self.options.headless = True
         self.options.add_argument('--disable-blink-features=AutomationControlled')
@@ -42,8 +39,6 @@ class Crawler:
         self.options.add_argument('--disable-dev-shm-usage')
         self.options.add_argument('--no-sandbox')
         self._driver = webdriver.Firefox(options=self.options)
-        # self._driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-
         self._driver.get(url)
         self._driver.get_screenshot_as_file("test5.png")
         print(self._driver.title)

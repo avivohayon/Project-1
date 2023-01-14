@@ -11,11 +11,8 @@ import os
 bot = telebot.TeleBot(TOKEN_API, parse_mode=None)
 states_dict ={"Menu": 0, "Start": 1, "All": 2, "Some": 3, "ML": 4, "Close": 5}
 bot_db = project_db.ProjectDB()
-
+crawler = pdf_downlad.Crawler()
 #TODO
-# use db, create a global session and update it
-# check ORM (mySQL) wirte one time scheme for the DB (save user state and the last messge)
-# open SQL server
 # read on "docker"( la misaviv)
 
 
@@ -46,7 +43,7 @@ def send_all_pdfs(msg):
         bot.send_document(msg.chat.id, cur_pdf)
         cur_pdf.close()
 #     #TODO
-#     # i need to see if i need to delete all the file if somone will ask to get all, and then get just some so
+#     # i need to see if i need to delete all the file if someone will ask to get all, and then get just some so
 #     # i wont give the user a file he doesnt need
 
 #TODO write a decorator that saves user current menu state by chat_id
@@ -56,7 +53,6 @@ def send_some_pdfs(msg):
     bot_db.update_state([msg.chat.id], "Some")
     bot.reply_to(msg, "Please name the companies you want separate by comma i.e: \nfor one company write  (with comma): comapny_name, \n "
                       "for more then one company write: company_name1,company_name2,... ")
-    # TODO save user_menu_state as some
     print(msg.text)
 
 @bot.message_handler(commands=["close"])
@@ -91,7 +87,7 @@ def get_companies_names(msg):
     bot.reply_to(msg, "Working on it!")
     companies_lst = msg.text.split(",")
     print(companies_lst)
-    pdf_downlad.runner(companies_lst)
+    crawler.runner(companies_lst)
     all_files = os.listdir(pdf_downlad.output_dir)
     cwd = os.getcwd() + pdf_downlad.output_dir + "\\"
     for file in all_files:
