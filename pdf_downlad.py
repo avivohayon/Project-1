@@ -45,6 +45,7 @@ class Crawler:
         self._driver = webdriver.Firefox(service=self._service, options=self.options)
         self._driver.get(url)
         self._driver.get_screenshot_as_file("test5.png")
+        self._company_pdf_links = None # dict of key: company name, val: the links for the pdf files
         # print(self._driver.title)
 
 
@@ -75,7 +76,7 @@ class Crawler:
             self._driver.get(companies_data_links[counter])
             elem = self._driver.find_elements(By.TAG_NAME, 'a')
             unfilterd_links = [i.get_attribute('href')for i in elem]
-            filtered_links = list(filter(lambda  link: link is not None and
+            filtered_links = list(filter(lambda link: link is not None and
                                          len(link) != 0
                                          and link.endswith('.pdf'), unfilterd_links))
 
@@ -100,9 +101,10 @@ class Crawler:
         # TODO
         # if theres already file in the output dir it will send them as well, need to fix it
 
-    def runner(self, company_name = None):
+    def init(self, company_name = None):
         """
         run the program to find and downland the finances files of all or several companies
+        using multi threading
         :param company_name: None by default - download all files, else a list of companies name
 
         """
@@ -113,24 +115,41 @@ class Crawler:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             executor.map(self.get_links, company_pdf_links, links)
             executor.submit(self.get_links, company_pdf_links, links)
-        print("company_pdf_links are: \n", company_pdf_links)
+        self._company_pdf_links = company_pdf_links
+        print("company_pdf_links are: \n", self._company_pdf_links)
+        counter = 0
+        for company in company_pdf_links:
+            if company_name is None and counter<4:
+                # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
+                self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
+                counter += 1
+            if company_name is not None and company in company_name and counter<8:
+                self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
+                counter += 1
+        print(pdf_urls)
+        self.download_pdf(pdf_urls)
 
-        # counter = 0
-        # for company in company_pdf_links:
-        #     if company_name is None and counter<4:
-        #         # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
-        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-        #         counter += 1
-        #     if company_name is not None and company in company_name and counter<8:
-        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-        #         counter += 1
-        # print(pdf_urls)
-        # self.download_pdf(pdf_urls)
+
+
+    #TODO
+    # dived "all" and "some" option into 2 functions. the intit is the "runner" and need the
+    # "get_pdf_links" part need to dived to the above options. more over try to make it more time efficient using
+    # multi threading
+    #     pdf_link_lst = []
+    #     print("22222")
+    #     print(self._company_pdf_links)
+    #     with concurrent.futures.ThreadPoolExecutor() as executor:
+    #         executor.map(self.get_pdf_links, list(self._company_pdf_links), pdf_link_lst)
+    #         executor.submit(self.get_pdf_links, list(self._company_pdf_links), pdf_link_lst)
+    #
+    #     print("links are : \n", pdf_link_lst)
+
 
 
 if __name__ == '__main__':
     crawl = Crawler()
-    crawl.runner()
+    crawl.init()
+    # crawl.pull_data()
     # runner(["ויתניה", "אנלייבקס", "tool"])
 
 

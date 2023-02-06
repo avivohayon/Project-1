@@ -87,7 +87,7 @@ def get_companies_names(msg):
     bot.reply_to(msg, "Working on it!")
     companies_lst = msg.text.split(",")
     print(companies_lst)
-    crawler.runner(companies_lst)
+    crawler.init(companies_lst)
     all_files = os.listdir(pdf_downlad.output_dir)
     cwd = os.getcwd() + pdf_downlad.output_dir + "\\"
     for file in all_files:
