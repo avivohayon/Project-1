@@ -4,6 +4,9 @@ import httplib2
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
+import concurrent.futures
+
 from bs4 import BeautifulSoup
 import tabula
 import camelot as cam
@@ -24,6 +27,7 @@ class Crawler:
            "DNT":"1"
           }
         self.options = Options()
+        self._service = Service()
         self.options.headless = True
         self.options.add_argument('--disable-blink-features=AutomationControlled')
         self.options.add_argument(f'user-agent={self._headers["User-Agent"]}')
@@ -38,35 +42,24 @@ class Crawler:
         self.options.add_argument('--disable-gpu')
         self.options.add_argument('--disable-dev-shm-usage')
         self.options.add_argument('--no-sandbox')
-        self._driver = webdriver.Firefox(options=self.options)
+        self._driver = webdriver.Firefox(service=self._service, options=self.options)
         self._driver.get(url)
         self._driver.get_screenshot_as_file("test5.png")
-        print(self._driver.title)
+        # print(self._driver.title)
 
 
     #TODO rn headless (so it wont open the borwser)
-    def get_data_links(self):
-        """
-        get the links for the pdf file of the companies
-        :return: a dict where company_pdf_links is a dict with key: company name,
-                                                               val: the links for the website with the finance files of the key company
-        """
-        company_pdf_links, links = {}, []
+
+
+    def get_links(self, company_pdf_links, links):
         browser = self._driver
-        # browser.get(url)
         elem_list = browser.find_element(By.CSS_SELECTOR, " div.min-height.ng-scope > div > div > div > div > div")
-        # print(elem_list)
-        items = elem_list.find_elements(By.XPATH, '//div[@role="row"]')[1:] # delete the first row which are the cols titles
+        items = elem_list.find_elements(By.XPATH, '//div[@role="row"]')[1:]
         for item in items:
             title = item.find_element(By.TAG_NAME, 'a').text
-            # print("name of company is: ", title, "\n")
-            links = [i.get_attribute('href') for i in item.find_elements(By.TAG_NAME, 'a') if "/2/" in i.get_attribute('href')]
+            links = [i.get_attribute('href') for i in item.find_elements(By.TAG_NAME, 'a') if
+                     "/2/" in i.get_attribute('href')]
             company_pdf_links[title] = set(links)
-            # to avoid duplication of links yet still get all the necessary urls with pdf in them (can be more then 1)
-            # print(company_pdf_links[title])
-        # browser.quit()
-        print("company_pdf_links are: \n", company_pdf_links)
-        return company_pdf_links
 
     def get_pdf_links(self, companies_data_links, pdf_links_list):
         """
@@ -114,18 +107,25 @@ class Crawler:
 
         """
         pdf_urls = []
-        company_pdf_links = self.get_data_links()
-        counter = 0
-        for company in company_pdf_links:
-            if company_name is None and counter<4:
-                # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
-                self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-                counter += 1
-            if company_name is not None and company in company_name and counter<8:
-                self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-                counter += 1
-        print(pdf_urls)
-        self.download_pdf(pdf_urls)
+        # company_pdf_links = self.get_data_links()
+        print("111111")
+        company_pdf_links, links = {}, []
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(self.get_links, company_pdf_links, links)
+            executor.submit(self.get_links, company_pdf_links, links)
+        print("company_pdf_links are: \n", company_pdf_links)
+
+        # counter = 0
+        # for company in company_pdf_links:
+        #     if company_name is None and counter<4:
+        #         # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
+        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
+        #         counter += 1
+        #     if company_name is not None and company in company_name and counter<8:
+        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
+        #         counter += 1
+        # print(pdf_urls)
+        # self.download_pdf(pdf_urls)
 
 
 if __name__ == '__main__':
