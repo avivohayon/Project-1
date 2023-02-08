@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 import tabula
 import camelot as cam
 output_dir = ".\Outputs"
+output_dir_all = ".\Outputs_all"
+output_dir_some = ".\Outputs_some"
 url = "https://maya.tase.co.il/en/reports/finance"  # remark, headless scraping from maya webpage works only with firefox browser
 # links = []
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36",
@@ -47,10 +49,12 @@ class Crawler:
         self._driver.get_screenshot_as_file("test5.png")
         self._company_pdf_links = None # dict of key: company name, val: the links for the pdf files
         # print(self._driver.title)
-
-
-    #TODO rn headless (so it wont open the borwser)
-
+        if not os.path.exists(output_dir_all):
+            os.makedirs(output_dir_all)
+            print("all dir created")
+        if not os.path.exists(output_dir_some):
+            os.makedirs(output_dir_some)
+            print("some die created")
 
     def get_links(self, company_pdf_links, links):
         browser = self._driver
@@ -86,18 +90,21 @@ class Crawler:
 
         # browser.quit()
 
-    def download_pdf(self, pdf_urls):
+    def download_pdf(self, pdf_urls, token = output_dir):
         """
         download the pdf file from a given url
-        :param pdf_urls: the url of pdf to download
+        :param pdf_urls: the url of pdf to download, token: which directory to save (all or some)
         """
+        print("hii")
         for url in pdf_urls:
             response = requests.get(url)
-            if response.status_code == 200:  # 200 is good, 404 is bad
-                file_path = os.path.join(output_dir, os.path.basename(url))
-                # join the output_dir name with the tail of the url which is the pdf file name
+            # join the output_dir name with the tail of the url which is the pdf file name
+            file_path = os.path.join(token, os.path.basename(url))
+            if response.status_code == 200 and not os.path.isfile(file_path):  # 200 is good, 404 is bad
                 with open(file_path, 'wb') as f:
                     f.write(response.content)
+            else:
+                print("the pdf already exists andno need to download it again")
 
         # TODO
         # if theres already file in the output dir it will send them as well, need to fix it
@@ -118,12 +125,13 @@ class Crawler:
         """
         download all the pdf files from the maya finance report website
         """
+        print("alll")
         pdf_urls = []
         for company in self._company_pdf_links:
             # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
             pdf_urls = self.get_pdf_links(list(self._company_pdf_links[company]), pdf_urls)
 
-        self.download_pdf(pdf_urls)
+        self.download_pdf(pdf_urls, output_dir_all)
 
     def get_some(self, companies_names_lst):
         """
@@ -137,10 +145,20 @@ class Crawler:
             if val == "Key not found":
                 print("theres no company in that name")
             else:
-                self.download_pdf(self.get_pdf_links(list(self._company_pdf_links[cur_company]), pdf_urls))
+                self.download_pdf(self.get_pdf_links(list(self._company_pdf_links[cur_company]), pdf_urls), output_dir_some)
 
 
-
+    def delete_prev_pdfs(self, token = output_dir_all):
+        """
+        delete all the previous pdf files from a given directory
+        :param token: the name of the directory (output_some or output_all)
+        """
+        files = os.listdir(token)
+        print(files)
+        for file in files:
+            if file.endswith(".pdf"):
+                os.remove(os.path.join(token, file))
+                print("File", file, "deleted")
 
     #TODO
     # dived "all" and "some" option into 2 functions. the intit is the "runner" and need the
@@ -159,9 +177,9 @@ class Crawler:
 
 if __name__ == '__main__':
     crawl = Crawler()
-    crawl.init()
+    # crawl.init()
     # crawl.get_all()
-    crawl.get_some(["PENNANTPARK", "PLURI", "Aviv"])
+    # crawl.get_some(["PENNANTPARK", "PLURI", "Aviv"])
     # crawl.pull_data()
     # runner(["ויתניה", "אנלייבקס", "tool"])
 

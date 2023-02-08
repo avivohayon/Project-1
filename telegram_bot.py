@@ -36,8 +36,8 @@ def send_all_pdfs(msg):
     bot.reply_to(msg, "Getting all the file, Meow. it might take a second. here a song while you wait Meoww")
     bot.send_message(chat_id=msg.chat.id, text="https://www.youtube.com/watch?v=jIQ6UV2onyI")
     crawler.init()  # its need to be the older "runner"
-    all_files = os.listdir(pdf_downlad.output_dir)
-    cwd = os.getcwd() + pdf_downlad.output_dir + "\\"
+    all_files = os.listdir(pdf_downlad.output_dir_all)
+    cwd = os.getcwd() + pdf_downlad.output_dir_all + "\\"
     for file in all_files:
         cur_pdf = open(cwd+file, 'rb')
         bot.send_document(msg.chat.id, cur_pdf)
@@ -88,8 +88,8 @@ def get_companies_names(msg):
     companies_lst = msg.text.split(",")
     print(companies_lst)
     crawler.init(companies_lst)
-    all_files = os.listdir(pdf_downlad.output_dir)
-    cwd = os.getcwd() + pdf_downlad.output_dir + "\\"
+    all_files = os.listdir(pdf_downlad.output_dir_all)
+    cwd = os.getcwd() + pdf_downlad.output_dir_all + "\\"
     for file in all_files:
         cur_pdf = open(cwd + file, 'rb')
         bot.send_document(msg.chat.id, cur_pdf)
