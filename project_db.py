@@ -69,12 +69,28 @@ class ProjectDB:
         return False
 
 
+
+
 #
-# db = ProjectDB()
-# # my_cursor = db.get_cursor()
+db = ProjectDB()
+# my_cursor = db.get_db().cursor()
+# my_cursor.execute("CREATE TABLE User (chat_id INTEGER(11) UNSIGNED PRIMARY KEY , cur_stage VARCHAR (30))")
+# my_cursor.execute("CREATE DATABASE projectdb")
+# my_cursor = db.get_cursor()
 # # db.delete_user( [123512])
-# db.update_state([123], "bye")
 # print(db.insert_user([44], "asd"))
+# print(db.insert_user([3], "bbbb"))
+# print(db.insert_user([1234], "ccc"))
+# print(db.update_state([1234], "bye"))
+# print(db.delete_user([44]))
+# print(db.get_state([1234]))
+print(db.delete_user([380841208]))
+
+
+
+
+
+
 # # stage = db.get_stage(my_cursor, [123])
 # # print(stage[0][0])
 # # db.delete_user(my_cursor, [123])
@@ -92,3 +108,11 @@ class ProjectDB:
 # for x in my_cursor:
 #     print(x)
 # add_formula = ""
+
+
+# ---------- util commends for the initialization of the db --------------------
+# my_cursor.execute("CREATE DATABASE projectdb") | creating the db itself
+# my_cursor.execute("CREATE TABLE User (chat_id INTEGER(11) UNSIGNED PRIMARY KEY , cur_stage VARCHAR (30))") | create the
+# user table
+
+

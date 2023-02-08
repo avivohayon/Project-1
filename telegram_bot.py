@@ -12,6 +12,10 @@ bot = telebot.TeleBot(TOKEN_API, parse_mode=None)
 states_dict ={"Menu": 0, "Start": 1, "All": 2, "Some": 3, "ML": 4, "Close": 5}
 bot_db = project_db.ProjectDB()
 crawler = pdf_downlad.Crawler()
+crawler.init()
+crawler.delete_prev_pdfs(pdf_downlad.output_dir_all)
+crawler.delete_prev_pdfs(pdf_downlad.output_dir_some)
+
 #TODO
 # read on "docker"( la misaviv)
 
@@ -27,7 +31,7 @@ def main(msg):
     btn2 = types.KeyboardButton("/some")
     btn3 = types.KeyboardButton("/close")
     markup.add(btn1, btn2, btn3)
-    bot.send_message(chat_id=msg.chat.id,text=" What will you like me to do?", reply_markup=markup)
+    bot.send_message(chat_id=msg.chat.id, text=" What will you like me to do?", reply_markup=markup)
 
 
 @bot.message_handler(commands=["all"])
@@ -35,7 +39,7 @@ def send_all_pdfs(msg):
     bot_db.update_state([msg.chat.id], "All")
     bot.reply_to(msg, "Getting all the file, Meow. it might take a second. here a song while you wait Meoww")
     bot.send_message(chat_id=msg.chat.id, text="https://www.youtube.com/watch?v=jIQ6UV2onyI")
-    crawler.init()  # its need to be the older "runner"
+    crawler.get_all()
     all_files = os.listdir(pdf_downlad.output_dir_all)
     cwd = os.getcwd() + pdf_downlad.output_dir_all + "\\"
     for file in all_files:
@@ -70,15 +74,20 @@ def router(msg):
     user_menu_state = states_dict[cur_user_state]
     match user_menu_state:
         case 0:
-            # TODO call some(msg)
+            # TODO call Main menu
             pass
         case 1:
-            # TODO call all()
+            # TODO call start
             pass
         case 2:
             pass
+        case 4:
+            # TODO call ML
+            pass
         case 3:
             get_companies_names(msg)
+        case 5:
+            close_menu(msg)
 
 
 
@@ -87,9 +96,10 @@ def get_companies_names(msg):
     bot.reply_to(msg, "Working on it!")
     companies_lst = msg.text.split(",")
     print(companies_lst)
-    crawler.init(companies_lst)
-    all_files = os.listdir(pdf_downlad.output_dir_all)
-    cwd = os.getcwd() + pdf_downlad.output_dir_all + "\\"
+    crawler.get_some(companies_lst)
+    all_files = os.listdir(pdf_downlad.output_dir_some)
+    print(f"all files are: {all_files}")
+    cwd = os.getcwd() + pdf_downlad.output_dir_some + "\\"
     for file in all_files:
         cur_pdf = open(cwd + file, 'rb')
         bot.send_document(msg.chat.id, cur_pdf)
@@ -105,3 +115,8 @@ def register_user(chat_id, command):
 
 # let the bot listen to msgs
 bot.polling()
+
+
+
+#TODO
+# after execute some or all cmd need to return to give again the KeyboardButton to chose to quit or some
