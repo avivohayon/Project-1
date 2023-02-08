@@ -102,16 +102,11 @@ class Crawler:
         # TODO
         # if theres already file in the output dir it will send them as well, need to fix it
 
-    def init(self, company_name = None):
+    def init(self):
         """
-        run the program to find and downland the finances files of all or several companies
-        using multi threading
-        :param company_name: None by default - download all files, else a list of companies name
-
+        init the crawler and extructe the companies names and thier coresponding pdf files links into a dict
+        name "self._company_pdf_links" using multi threading
         """
-        pdf_urls = []
-        # company_pdf_links = self.get_data_links()
-        print("111111")
         company_pdf_links, links = {}, []
         with concurrent.futures.ThreadPoolExecutor() as executor:
             executor.map(self.get_links, company_pdf_links, links)
@@ -119,24 +114,10 @@ class Crawler:
         self._company_pdf_links = company_pdf_links
         print("company_pdf_links are: \n", self._company_pdf_links)
 
-
-        # counter = 0
-        # for company in company_pdf_links:
-        #     if company_name is None and counter<4:
-        #         # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
-        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-        #         counter += 1
-        #     if company_name is not None and company in company_name and counter<8:
-        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-        #         counter += 1
-        # print(pdf_urls)
-        # self.download_pdf(pdf_urls)
-
     def get_all(self):
         """
         download all the pdf files from the maya finance report website
         """
-        print("333333")
         pdf_urls = []
         for company in self._company_pdf_links:
             # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
