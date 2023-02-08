@@ -35,7 +35,7 @@ def send_all_pdfs(msg):
     bot_db.update_state([msg.chat.id], "All")
     bot.reply_to(msg, "Getting all the file, Meow. it might take a second. here a song while you wait Meoww")
     bot.send_message(chat_id=msg.chat.id, text="https://www.youtube.com/watch?v=jIQ6UV2onyI")
-    pdf_downlad.runner()
+    crawler.init()  # its need to be the older "runner"
     all_files = os.listdir(pdf_downlad.output_dir)
     cwd = os.getcwd() + pdf_downlad.output_dir + "\\"
     for file in all_files:

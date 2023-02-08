@@ -82,6 +82,7 @@ class Crawler:
 
             pdf_links_list += filtered_links
             counter += 1
+        return pdf_links_list
 
         # browser.quit()
 
@@ -117,17 +118,46 @@ class Crawler:
             executor.submit(self.get_links, company_pdf_links, links)
         self._company_pdf_links = company_pdf_links
         print("company_pdf_links are: \n", self._company_pdf_links)
-        counter = 0
-        for company in company_pdf_links:
-            if company_name is None and counter<4:
-                # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
-                self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-                counter += 1
-            if company_name is not None and company in company_name and counter<8:
-                self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
-                counter += 1
-        print(pdf_urls)
+
+
+        # counter = 0
+        # for company in company_pdf_links:
+        #     if company_name is None and counter<4:
+        #         # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
+        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
+        #         counter += 1
+        #     if company_name is not None and company in company_name and counter<8:
+        #         self.get_pdf_links(list(company_pdf_links[company]), pdf_urls)
+        #         counter += 1
+        # print(pdf_urls)
+        # self.download_pdf(pdf_urls)
+
+    def get_all(self):
+        """
+        download all the pdf files from the maya finance report website
+        """
+        print("333333")
+        pdf_urls = []
+        for company in self._company_pdf_links:
+            # print(f"company name is: {company} \n pdf_web_links are: {company_pdf_links[company]}")
+            pdf_urls = self.get_pdf_links(list(self._company_pdf_links[company]), pdf_urls)
+
         self.download_pdf(pdf_urls)
+
+    def get_some(self, companies_names_lst):
+        """
+        download the pdf reports of company by thier names
+        :param companies_names_lst: list of the names of the companies for the finance report
+        """
+        pdf_urls = []
+        for cur_company in companies_names_lst:
+            print(f"cur company is {cur_company}")
+            val = self._company_pdf_links.get(cur_company, "Key not found")
+            if val == "Key not found":
+                print("theres no company in that name")
+            else:
+                self.download_pdf(self.get_pdf_links(list(self._company_pdf_links[cur_company]), pdf_urls))
+
 
 
 
@@ -149,6 +179,8 @@ class Crawler:
 if __name__ == '__main__':
     crawl = Crawler()
     crawl.init()
+    # crawl.get_all()
+    crawl.get_some(["PENNANTPARK", "PLURI", "Aviv"])
     # crawl.pull_data()
     # runner(["ויתניה", "אנלייבקס", "tool"])
 
